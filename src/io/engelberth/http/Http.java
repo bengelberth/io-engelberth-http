@@ -263,7 +263,7 @@ public class Http {
 			byte[] request = ("GET " + url.file + " HTTP/1.1" + HTTP_NEW_LINE +
 							"Host: " + url.hostname + (url.port==80||url.port==443?"":(":" + url.port)) + HTTP_NEW_LINE +
 							"Accept-Encoding: gzip" + HTTP_NEW_LINE +
-							"User-Agent: " + USER_AGENT + HTTP_NEW_LINE 
+							"User-Agent: " + USER_AGENT + HTTP_NEW_LINE +
 							(mCookies==null?"":"Cookie:" + mCookies + HTTP_NEW_LINE) +
 							HTTP_NEW_LINE).getBytes();
 			out.write(request);

@@ -2,23 +2,44 @@
 
 DATE=`date +%Y%m%d-%H%M%S`
 
+# Config options
+BIN_DIR=bin
+
 # Default options
-OPTION_VERBOSE=no
+OPTION_VERBOSE=no				# Verbose mode off by default
+OPTION_ARCHIVE_SOURCE=no		# Archive source into tarball (off)
+OPTION_ARCHIVE_BIN=no			# Archive bin into jar (off)
+OPTION_COMPILE_MAIN=yes			# Compile main source (on)
+OPTION_ECHO_HELP=no				# Display help meni (off)
+OPTION_COMPILE_FILESERVER=no	# Compile fileserver source (off)
+OPTION_CLEAN=no					# Clean binary folder aka rm -rf (off)
+OPTION_BUILD_JSON=no			# Build json jar needed for fileserver (off)
 
-OPTION_ARCHIVE_SOURCE=no
-OPTION_ARCHIVE_BIN=no
-OPTION_COMPILE_MAIN=yes
-OPTION_ECHO_HELP=no
-OPTION_COMPILE_FILESERVER=no
-OPTION_CLEAN=no
-OPTION_BUILD_JSON=no
-
+# echo a red "error!"
 print_error () {
 	echo "\033[0;31merror!\033[0m"
 }
+
+# Check last return code.  If none 0, print error/echo output/exit with error code
+exit_on_error () {
+	if [ $? -ne 0 ]; then
+		print_error
+		echo "$1"
+		exit $?
+	fi
+}
+# Check last return code print error or success.  Print output if verbose mode on
+print_exit_status () {
+	exit_on_error "$1"
+	print_success
+	print_verbose "$1"
+	
+}
+# Print gren "success"
 print_success () {
 	echo "\033[0;32msuccess\033[0m"
 }
+# Print if verbose option is on
 print_verbose () {
 	if [ "$OPTION_VERBOSE" = "yes" ]; then
 		echo "$1"
@@ -28,54 +49,29 @@ print_verbose () {
 archive_source () {
 	echo -n "Archiving source... "
 	OUTPUT_TAR=$(tar -cvzf io.engelberth.http-src.tar.gz src/ 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT_TAR"
-		exit $?
-	fi
+	exit_on_error "$OUTPUT_TAR"
 	OUTPUT_CP=$(cp io.engelberth.http-src.tar.gz archive/io.engelberth.http-src-$DATE.tar.gz 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT_CP"
-		exit $?
-	fi
-	print_success
-	#if [ "$OPTION_VERBOSE" = "yes" ]; then
-	print_verbose "$OUTPUT_TAR"
-	print_verbose "$OUTPUT_CP"
+	print_exit_status "$OUTPUT_TAR\n$OUTPUT_CP"
 	#fi
 	
 }
+# Archive binaries into jar
 archive_bin () {
 	echo -n "Archiving binaries... "
 	OUTPUT_JAR=$(jar cf io.engelberth.http.jar -C bin . 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT_JAR"
-		exit $?
-	fi
+	exit_on_error "$OUTPUT_JAR"
 	OUTPUT_CP=$(cp io.engelberth.http.jar lib/io.engelberth.http-$DATE.jar 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT_CP"
-	fi
-	print_success
-	print_verbose "$OUTPUT_JAR"
-	print_verbose "$OUTPUT_CP"
+	print_exit_status "$OUTPUT_JAR\n$OUTPUT_CP"
 	 
 }
 
+# Compile main source
 compile_main () {
 	echo -n "Compiling main source... "
-	OUTPUT=$(javac -d bin src/io/engelberth/http/*.java 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	 
-	print_verbose "$OUTPUT"
+	OUTPUT=$(mkdir -p "$BIN_DIR")
+	exit_on_error "$OUTPUT"
+	OUTPUT=$(javac -d "$BIN_DIR" src/io/engelberth/http/*.java 2>&1)
+	print_exit_status "$OUTPUT"
 }
 compile_fileserver () {
 	echo -n "Compiling fileserver... "
