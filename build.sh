@@ -4,6 +4,8 @@ DATE=`date +%Y%m%d-%H%M%S`
 
 # Config options
 BIN_DIR=bin
+SRC_ARCHIVE_DIR=archive
+BIN_ARCHIVE_DIR=lib
 
 # Default options
 OPTION_VERBOSE=no				# Verbose mode off by default
@@ -48,19 +50,23 @@ print_verbose () {
 # Archive the source file into a tarball
 archive_source () {
 	echo -n "Archiving source... "
+	OUTPUT=$(mkdir -p "$SRC_ARCHIVE_DIR" 2>&1)
+	exit_on_error "$OUTPUT"
 	OUTPUT_TAR=$(tar -cvzf io.engelberth.http-src.tar.gz src/ 2>&1)
 	exit_on_error "$OUTPUT_TAR"
-	OUTPUT_CP=$(cp io.engelberth.http-src.tar.gz archive/io.engelberth.http-src-$DATE.tar.gz 2>&1)
+	OUTPUT_CP=$(cp io.engelberth.http-src.tar.gz "$SRC_ARCHIVE_DIR/io.engelberth.http-src-$DATE.tar.gz" 2>&1)
 	print_exit_status "$OUTPUT_TAR\n$OUTPUT_CP"
-	#fi
+	
 	
 }
 # Archive binaries into jar
 archive_bin () {
 	echo -n "Archiving binaries... "
-	OUTPUT_JAR=$(jar cf io.engelberth.http.jar -C bin . 2>&1)
+	OUTPUT=$(mkdir -p "$BIN_ARCHIVE_DIR" 2>&1)
+	exit_on_error "$OUTPUT"
+	OUTPUT_JAR=$(jar cf io.engelberth.http.jar -C "$BIN_DIR" . 2>&1)
 	exit_on_error "$OUTPUT_JAR"
-	OUTPUT_CP=$(cp io.engelberth.http.jar lib/io.engelberth.http-$DATE.jar 2>&1)
+	OUTPUT_CP=$(cp io.engelberth.http.jar "$BIN_ARCHIVE_DIR/io.engelberth.http-$DATE.jar" 2>&1)
 	print_exit_status "$OUTPUT_JAR\n$OUTPUT_CP"
 	 
 }
@@ -68,21 +74,15 @@ archive_bin () {
 # Compile main source
 compile_main () {
 	echo -n "Compiling main source... "
-	OUTPUT=$(mkdir -p "$BIN_DIR")
+	OUTPUT=$(mkdir -p "$BIN_DIR" 2>&1)
 	exit_on_error "$OUTPUT"
 	OUTPUT=$(javac -d "$BIN_DIR" src/io/engelberth/http/*.java 2>&1)
 	print_exit_status "$OUTPUT"
 }
 compile_fileserver () {
 	echo -n "Compiling fileserver... "
-	OUTPUT=$(javac -cp bin/:org.json.jar -d bin src/io/engelberth/http/fileserver/*.java 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	print_verbose "$OUTPUT"
+	OUTPUT=$(javac -cp "$BIN_DIR":org.json.jar -d bin src/io/engelberth/http/fileserver/*.java 2>&1)
+	print_exit_status "$OUTPUT"
 
 }
 compile_project () {
@@ -92,70 +92,34 @@ compile_project () {
 
 clean_bin () {
 	echo -n "Cleaning binaries... "
-	OUTPUT=$(rm -rf bin/* 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	print_verbose "$OUTPUT"
+	OUTPUT=$(rm -rf "$BIN_DIR" 2>&1)
+	print_exit_status "$OUTPUT"
 }
 build_json () {
 	echo "Building JSON jar:"
 	echo -n "\tCreating tmp directory... "
 	JSON_TMP_DIR=$(mktemp -d 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$JSON_TMP_DIR"
-		exit $?
-	fi
-	print_success
-	print_verbose "\tDirectory: $JSON_TMP_DIR"
+	print_exit_status "\tDirectory: $JSON_TMP_DIR"
 	
 	# Download zip
 	echo -n "\tDownloading org.json. source... "
 	OUTPUT=$(curl -L -o $JSON_TMP_DIR/json.zip https://github.com/douglascrockford/JSON-java/archive/master.zip 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	print_verbose "$OUTPUT"
+	print_exit_status "$OUTPUT"
 	
 	#unzip download
 	echo -n "\tUnzipping source... "
 	OUTPUT=$(unzip -d $JSON_TMP_DIR $JSON_TMP_DIR/json 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	print_verbose "$OUTPUT"
+	print_exit_status "$OUTPUT"
 	
 	#compile source
 	echo -n "\tCompiling source... "
 	OUTPUT=$(javac -d $JSON_TMP_DIR $JSON_TMP_DIR/JSON-java-master/*.java 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	print_verbose "$OUTPUT"
+	print_exit_status "$OUTPUT"
 	
 	#build jar
 	echo -n "\tBuilding org.json.jar... "
 	OUTPUT=$(jar cf org.json.jar -C $JSON_TMP_DIR org 2>&1)
-	if [ $? -ne 0 ]; then
-		print_error
-		echo "$OUTPUT"
-		exit $?
-	fi
-	print_success
-	print_verbose "$OUTPUT"
+	print_exit_status "$OUTPUT"
 	
 	#success!
 }
