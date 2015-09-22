@@ -11,6 +11,7 @@ public class FileServerListener implements HttpRequestListener {
 	private File mRoot = null;
 	private String mIndexFile = null;
 	private String index;
+	public static final String FILE_REQUEST = "/fs/";
 	
 	public static String cleanRequest(String request) {
 		return request.replace("..", "").replace("./", "/").replace(";", "");
@@ -29,6 +30,8 @@ public class FileServerListener implements HttpRequestListener {
 			connection.send("text/html", index);
 			return;
 		}
+		if (
+		JSONFile file = new JSONFile(new File(mRoot, 
 		File requestedFile = new File(mRoot, header.request);
 		if (requestedFile.exists() == false) {
 			connection.send404("File does not exist");

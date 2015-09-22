@@ -26,7 +26,7 @@ public class Server {
 	
 	public static final int MAX_HEADER_READ = 1024 * 5;
 	public static final int MAX_CONNECTIONS = 25;
-	public static final int READ_TIMEOUT = 2500;	// milliseconds
+	public static final int READ_TIMEOUT = 10000;	// milliseconds
 	public static final int OUTPUT_BUFFER_SIZE = 3000;
 	public static final int MINIMUM_COMPRESS_SIZE = 150;	// Smallest amount of data to compress
 	public static final int REQUEST_BUFFER = 10485760;	// 10 MB (Buffer size for compressed output
@@ -99,7 +99,7 @@ public class Server {
         public OutputStream getOutputStream() {
         		return mOutput;
         }
-        private void readAndHandleRequest() throws IOException {
+        private void readAndHandleRequest(int headerCount) throws IOException {
         		HttpHeader httpHeader = new HttpHeader();
 				
 				
@@ -117,12 +117,14 @@ public class Server {
                     if (request.lastIndexOf(Http.HTTP_NEW_LINE + Http.HTTP_NEW_LINE, request.length()) > -1) break;
                 }
                 
+                // Connection closed by client.  return out.
+       			if (d < 0 || request.length() < 3) return;
                 // Figure out type
                 if (request.substring(0, 3).equals("GET")) {
-                		httpHeader.type = HttpHeader.TYPE_GET;
-                	}
+                	httpHeader.type = HttpHeader.TYPE_GET;
+                }
                 	
-				mServer.p.debugln("Socket=" + mSocket + ", header=" + request);
+				mServer.p.debugln("Socket=" + mSocket + ", headerCount=" + headerCount + ", header=" + request);
 				//if (l == -1) System.out.println("l = -1, " + t);
 				// Parse requested file
 				mCompress = request.contains("gzip");
@@ -146,7 +148,7 @@ public class Server {
 				*/
 				// Check header if "close"
 				// if close then return.
-			readAndHandleRequest();
+			readAndHandleRequest(headerCount+1);
         }
 		@Override
 		public void run() {
@@ -159,7 +161,7 @@ public class Server {
 				mSocket.setSoTimeout(READ_TIMEOUT);
 				mInput = new BufferedInputStream(mSocket.getInputStream());
 				mOutput = new BufferedOutputStream(mSocket.getOutputStream());
-				readAndHandleRequest();
+				readAndHandleRequest(1);
 				
 			} catch (SocketTimeoutException e) {
 				mServer.p.errorln("Socket=" + mSocket + ", Connection timeout error");
@@ -256,6 +258,7 @@ public class Server {
 					"Connection: close" + Http.HTTP_NEW_LINE + 
 					"Content-Type: " + type + Http.HTTP_NEW_LINE +
 					"Content-Length: " + size + Http.HTTP_NEW_LINE +
+					//"Connection: keep-alive" + Http.HTTP_NEW_LINE +
 					(compress?"Content-Encoding: gzip" + Http.HTTP_NEW_LINE:"") +
 					Http.HTTP_NEW_LINE).getBytes());
 			if (compress)

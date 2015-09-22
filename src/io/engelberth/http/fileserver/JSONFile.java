@@ -7,27 +7,38 @@ import org.json.*;
 
 public class JSONFile {
 	private String mRoot = null;
-	private File mRootFile;
-	private File[] mDirectories;
-	private File[] mFiles;
-	private JSONArray mRootArray = new JSONArray();
+	
+	private JSONArray mRootArray;
 	
 	public static void main(String[] args) throws Exception {
 		JSONFile jsonExplorer = new JSONFile("./");
+		System.out.println(jsonExplorer);
 	}
 	@Override
 	public String toString() {
-		return mRootArray.toString(4);
+		return mRootArray.toString(2);
 	}
 	private JSONFile() { }
 	
 	public JSONFile(String root) throws FileNotFoundException {
 		mRoot = root;
-		mRootFile = new File(root);
-		if (!mRootFile.exists()) throw new FileNotFoundException("Root: " + root + " does not exist");
-		if (!mRootFile.isDirectory()) throw new FileNotFoundException("Root: " + root + " is not a directory");
-		mDirectories = mRootFile.listFiles(new DirectoryFileFilter());
-		mFiles = mRootFile.listFiles(new FileFileFilter());
+		File rootFile = new File(root);
+		if (!rootFile.exists()) throw new FileNotFoundException("Root: " + root + " does not exist");
+		if (!rootFile.isDirectory()) throw new FileNotFoundException("Root: " + root + " is not a directory");
+		
+		File[] rootFiles = rootFile.listFiles();
+		JSONObject[] jsonFiles = new JSONObject[rootFiles.length];
+		
+		for (int i = 0; i < jsonFiles.length; i++) {
+			jsonFiles[i] = new JSONObject().put("name", rootFiles[i].getName());
+
+			if (rootFiles[i].isDirectory()) jsonFiles[i].put("dir", true);
+			if (rootFiles[i].isFile()) jsonFiles[i].put("file", true);
+
+			jsonFiles[i].put("size", rootFiles[i].length());
+		} 
+		mRootArray = new JSONArray(jsonFiles);
+		
 	}
 	
 	private boolean addFile(File f) {
