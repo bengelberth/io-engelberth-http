@@ -30,8 +30,8 @@ public class FileServerListener implements HttpRequestListener {
 			connection.send("text/html", index);
 			return;
 		}
-		if (
-		JSONFile file = new JSONFile(new File(mRoot, 
+		//if (
+		//JSONFile file = new JSONFile(new File(mRoot, 
 		File requestedFile = new File(mRoot, header.request);
 		if (requestedFile.exists() == false) {
 			connection.send404("File does not exist");
